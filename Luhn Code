@@ -1,1 +1,73 @@
-Luhn
+
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    char card[20];
+    int length = 0;
+    int sum = 0;
+    int count = 0;
+    bool valid = true;
+
+    cout << "Enter card number: ";
+    cin >> card;
+
+    // Find length of card number
+    while (card[length] != '\0')
+    {
+        length++;
+    }
+
+    // Check card length
+    if (length < 13 || length > 19)
+    {
+        valid = false;
+    }
+
+    // Check if all characters are digits
+    for (int i = 0; i < length; i++)
+    {
+        if (card[i] < '0' || card[i] > '9')
+        {
+            valid = false;
+        }
+    }
+
+    if (valid == false)
+    {
+        cout << "Invalid input" << endl;
+    }
+    else
+    {
+        // Apply Luhn Algorithm
+        for (int i = length - 1; i >= 0; i--)
+        {
+            int digit = card[i] - '0';
+
+            if (count % 2 == 1)
+            {
+                digit = digit * 2;
+
+                if (digit > 9)
+                {
+                    digit = digit - 9;
+                }
+            }
+
+            sum = sum + digit;
+            count++;
+        }
+
+        if (sum % 10 == 0)
+        {
+            cout << "Valid card number" << endl;
+        }
+        else
+        {
+            cout << "Invalid card number" << endl;
+        }
+    }
+
+    return 0;
+}
