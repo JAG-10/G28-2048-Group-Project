@@ -1,7 +1,9 @@
 #include <iostream>
 #include "2048_helper.h"
 using namespace std;
-
+#ifndef WITH_SAVE_LOAD
+#define WITH_SAVE_LOAD
+#endif
 int main()
 {
 	int size = 5;
@@ -48,17 +50,6 @@ int main()
 	return 0;
 }
 
-
-
-
-
-
-
-// ------------------------------------------------------------
-// Save / load   (only compiled when -DWITH_SAVE_LOAD is used,
-// because file I/O requires <fstream>)
-// ------------------------------------------------------------
-
 #ifdef WITH_SAVE_LOAD
 
 bool save_game(const GameState &game, const char *filename)
@@ -85,10 +76,9 @@ bool is_valid_tile(int v)
 {
     return v == 0 || (v >= 2 && (v & (v - 1)) == 0);
 }
-
-// Loads a saved game. On ANY problem (missing file, wrong header,
-// bad numbers, invalid tiles) it returns false and leaves the
-// active game completely unchanged.
+/*Loads a saved game. On ANY problem (missing file, wrong header,
+bad numbers, invalid tiles) it returns false and leaves the
+active game completely unchanged.*/
 bool load_game(GameState &game, const char *filename)
 {
     ifstream in(filename);
@@ -110,12 +100,12 @@ bool load_game(GameState &game, const char *filename)
         for (int c = 0; c < BOARD_SIZE; c++)
         {
             if (!(in >> tmp[r][c]))
-                return false;                  // not enough numbers
+                return false;                  // missing numbers
             if (!is_valid_tile(tmp[r][c]))
-                return false;                  // impossible tile value
+                return false;                  // incorrect tile value
         }
 
-    // Everything checked out — only now change the game.
+    // if all checks are cleared teh game loads.
     copy_board(game.board, tmp);
     game.score = score;
     game.moves = moves;
@@ -125,9 +115,9 @@ bool load_game(GameState &game, const char *filename)
 
 #endif // WITH_SAVE_LOAD
 
-// ------------------------------------------------------------
+
+
 // Menu and game loop
-// ------------------------------------------------------------
 
 void print_menu()
 {
