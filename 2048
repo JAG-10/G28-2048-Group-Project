@@ -1,273 +1,192 @@
 #include <iostream>
+#include <fstream>
+#include <string>
+#include <ctime>
 #include "2048_helper.h"
 using namespace std;
 #ifndef WITH_SAVE_LOAD
 #define WITH_SAVE_LOAD
 #endif
-int main()
-{
-	int size = 5;
-	int board[5][5] = {
-		{0, 4, 2, 4, 0},
-		{0, 0, 0, 0, 0},
-		{2, 0, 2, 0, 2},
-		{0, 0, 2, 0, 0},
-		{2, 2, 2, 2, 2},
-	};
-	//while getch == x loop for up down left right
-
-	cout << "Initial Board : [5x5] :" << endl;
-	print_board(board);
-
-	char choice = 'u';	//initialized
-	while (choice != 'e')
-	{
-
-		cout << "Please enter choice:{u,d,l,r,e} for UP, DOWN, LEFT, RIGHT, Exit: " << endl;
-		cout << "Choice: ";
-		cin >> choice;
-
-		if (choice == 'e')
-            break;
-        int before[5][5];
-        copy_board(before, board);
-
-		if (choice == 'u')
-			move_up(board, size);
-		else if (choice == 'd')
-			move_down(board, size);
-		else if (choice == 'l')
-			move_left(board, size);
-		else if (choice == 'r')
-			move_right(board, size);
-
-		insert_random(board, size);
-		print_board(board);
-
-	}
-
-
-	return 0;
-}
-
 #ifdef WITH_SAVE_LOAD
-
 bool save_game(const GameState &game, const char *filename)
 {
-    ofstream out(filename);
-    if (!out)
-        return false;
-
-    out << "2048save v1\n";
-    out << game.score << " " << game.moves << " " << (game.won ? 1 : 0) << "\n";
-    for (int r = 0; r < BOARD_SIZE; r++)
-    {
-        for (int c = 0; c < BOARD_SIZE; c++)
-        {
-            out << game.board[r][c];
-            out << (c + 1 < BOARD_SIZE ? ' ' : '\n');
-        }
-    }
-    return out.good();
+	ofstream out(filename);
+	if (!out)
+		return false;
+	out << "2048save v1\n";
+	out << game.score << " " << game.moves << " " << (game.won ? 1 : 0) << "\n";
+	for (int r = 0; r < BOARD_SIZE; r++)
+		for (int c = 0; c < BOARD_SIZE; c++)
+			out << game.board[r][c] << (c + 1 < BOARD_SIZE ? ' ' : '\n');
+	return out.good();
 }
-
-// A tile is valid if it is 0 or a power of two (2, 4, 8, ...).
 bool is_valid_tile(int v)
 {
-    return v == 0 || (v >= 2 && (v & (v - 1)) == 0);
+	return v == 0 || (v >= 2 && (v & (v - 1)) == 0);
 }
-/*Loads a saved game. On ANY problem (missing file, wrong header,
-bad numbers, invalid tiles) it returns false and leaves the
-active game completely unchanged.*/
 bool load_game(GameState &game, const char *filename)
 {
-    ifstream in(filename);
-    if (!in)
-        return false;                          // file does not exist
-
-    char tag[16], version[8];
-    in >> tag >> version;
-    if (!in || strcmp(tag, "2048save") != 0 || strcmp(version, "v1") != 0)
-        return false;                          // malformed header
-
-    int score, moves, won;
-    in >> score >> moves >> won;
-    if (!in || score < 0 || moves < 0 || (won != 0 && won != 1))
-        return false;                          // malformed state line
-
-    int tmp[BOARD_SIZE][BOARD_SIZE];
-    for (int r = 0; r < BOARD_SIZE; r++)
-        for (int c = 0; c < BOARD_SIZE; c++)
-        {
-            if (!(in >> tmp[r][c]))
-                return false;                  // missing numbers
-            if (!is_valid_tile(tmp[r][c]))
-                return false;                  // incorrect tile value
-        }
-
-    // if all checks are cleared teh game loads.
-    copy_board(game.board, tmp);
-    game.score = score;
-    game.moves = moves;
-    game.won   = (won == 1);
-    return true;
+	ifstream in(filename);
+	if (!in)
+		return false;
+	string tag, version;
+	in >> tag >> version;
+	if (!in || tag != "2048save" || version != "v1")
+		return false;
+	int score, moves, won;
+	in >> score >> moves >> won;
+	if (!in || score < 0 || moves < 0 || (won != 0 && won != 1))
+		return false;
+	int tmp[BOARD_SIZE][BOARD_SIZE];
+	for (int r = 0; r < BOARD_SIZE; r++)
+		for (int c = 0; c < BOARD_SIZE; c++)
+		{
+			if (!(in >> tmp[r][c]))
+				return false;
+			if (!is_valid_tile(tmp[r][c]))
+				return false;
+		}
+	copy_board(game.board, tmp);
+	game.score = score;
+	game.moves = moves;
+	game.won = (won == 1);
+	return true;
 }
-
-#endif // WITH_SAVE_LOAD
-
-
-
-// Menu and game loop
-
+#endif
 void print_menu()
 {
-    cout << "\n========= 2048 (5x5) =========\n"
-         << " 1. New game\n"
-         << " 2. Load saved game\n"
-         << " 3. Save current game\n"
-         << " 4. Quit\n"
-         << "==============================\n"
-         << "Choice (1-4): ";
+	cout << "\n========= 2048 (5x5) =========\n"
+		 << " 1. New game\n"
+		 << " 2. Load saved game\n"
+		 << " 3. Save current game\n"
+		 << " 4. Quit\n"
+		 << "==============================\n"
+		 << "Choice (1-4): ";
 }
-
 void play_game(GameState &game)
 {
-    while (true)
-    {
-        print_board(game.board);
-        cout << "  Score: " << game.score << "   Moves: " << game.moves << endl;
-
-        if (!can_move(game.board))
-        {
-            cout << "\n*** Game over — no moves left. Final score: "
-                 << game.score << " ***\n";
-            return;
-        }
-
-        if (highest_tile(game.board) >= WIN_TILE && !game.won)
-        {
-            game.won = true;
-            cout << "\n*** You reached " << WIN_TILE << " — you win! ***\n"
-                 << "Keep playing? (y/n): ";
-            char ans;
-            if (!(cin >> ans) || (lower(ans) != 'y'))
-            {
-                if (cin.fail()) cin.clear();
-                return;
-            }
-        }
-
-        cout << "\nMove? (W=up A=left S=down D=right, M=menu, Q=quit) ";
-
-        char cmd;
-        if (!(cin >> cmd))
-        {
-            cin.clear();              // bad input (or EOF) — back to menu
-            return;
-        }
-        cmd = lower(cmd);
-
-        if (cmd == 'q' || cmd == 'm')
-            return;
-
-        int before[BOARD_SIZE][BOARD_SIZE];
-        copy_board(before, game.board);
-
-        int points = 0;
-        switch (cmd)
-        {
-            case 'w': points = move_up(game.board);    break;
-            case 'a': points = move_left(game.board);  break;
-            case 's': points = move_down(game.board);  break;
-            case 'd': points = move_right(game.board); break;
-            default:
-                cout << "  Please use W, A, S or D.\n";
-                continue;
-        }
-
-        if (boards_equal(before, game.board))
-        {
-            cout << "  Nothing moves that way.\n";
-            continue;
-        }
-
-        game.score += points;
-        game.moves++;
-        insert_random(game.board);
-    }
+	while (true)
+	{
+		print_board(game.board);
+		cout << "  Score: " << game.score << "   Moves: " << game.moves << endl;
+		if (highest_tile(game.board) >= WIN_TILE && !game.won)
+		{
+			game.won = true;
+			cout << "\n*** You reached " << WIN_TILE << " - you win! ***\n"
+				 << "Keep playing? (y/n): ";
+			char ans;
+			if (!(cin >> ans) || lower(ans) != 'y')
+				return;
+		}
+		if (!can_move(game.board))
+		{
+			cout << "\n*** Game over - no moves left. Final score: "
+				 << game.score << " ***\n";
+			return;
+		}
+		cout << "\nMove? (U=up L=left D=down R=right, M=menu, E=quit) ";
+		char cmd;
+		if (!(cin >> cmd))
+			return;
+		cmd = lower(cmd);
+		if (cmd == 'e' || cmd == 'm')
+			return;
+		int before[BOARD_SIZE][BOARD_SIZE];
+		copy_board(before, game.board);
+		int points = 0;
+		switch (cmd)
+		{
+			case 'u': points = move_up(game.board);    break;
+			case 'l': points = move_left(game.board);  break;
+			case 'd': points = move_down(game.board);  break;
+			case 'r': points = move_right(game.board); break;
+			default:
+				cout << "  Please use U, D, L or R.\n";
+				continue;
+		}
+		if (boards_equal(before, game.board))
+		{
+			cout << "  Nothing moves that way.\n";
+			continue;
+		}
+		game.score += points;
+		game.moves++;
+		insert_random(game.board);
+	}
 }
-
 int main_game()
 {
-    GameState game;
-    new_game(game);          // start with a valid empty state
+	GameState game;
+	new_game(game);
 #ifdef WITH_SAVE_LOAD
-    bool has_game = false;   // is a game currently in progress?
+	bool has_game = false;
 #endif
-
-    while (true)
-    {
-        print_menu();
-
-        int choice;
-        if (!(cin >> choice))
-        {
-            cin.clear();
-            cin.ignore(10000, '\n');
-            cout << "  Enter a number 1-4.\n";
-            continue;
-        }
-
-        switch (choice)
-        {
-            case 1: // new game
-                new_game(game);
+	while (true)
+	{
+		print_menu();
+		int choice;
+		if (!(cin >> choice))
+		{
+			if (cin.eof())
+				return 0;
+			cin.clear();
+			cin.ignore(10000, '\n');
+			cout << "  Enter a number 1-4.\n";
+			continue;
+		}
+		switch (choice)
+		{
+			case 1:
+				new_game(game);
 #ifdef WITH_SAVE_LOAD
-                has_game = true;
+				has_game = true;
 #endif
-                play_game(game);
-                break;
-
-            case 2: // load
+				play_game(game);
+				break;
+			case 2:
 #ifdef WITH_SAVE_LOAD
-                if (load_game(game, SAVE_FILE))
-                {
-                    has_game = true;
-                    cout << "  Game loaded from '" << SAVE_FILE << "'.\n";
-                    play_game(game);
-                }
-                else
-                {
-                    cout << "  Could not load '" << SAVE_FILE
-                         << "' — the active game was NOT changed.\n";
-                }
+				if (load_game(game, SAVE_FILE))
+				{
+					has_game = true;
+					cout << "  Game loaded from '" << SAVE_FILE << "'.\n";
+					play_game(game);
+				}
+				else
+				{
+					cout << "  Could not load '" << SAVE_FILE
+						 << "' - the active game was NOT changed.\n";
+				}
 #else
-                cout << "  Save/load is disabled in this build "
-                     << "(compile with -DWITH_SAVE_LOAD to enable it).\n";
+				cout << "  Save/load is disabled in this build "
+					 << "(compile with -DWITH_SAVE_LOAD to enable it).\n";
 #endif
-                break;
-
-            case 3: // save
+				break;
+			case 3:
 #ifdef WITH_SAVE_LOAD
-                if (!has_game)
-                {
-                    cout << "  No game in progress — start or load a game first.\n";
-                    break;
-                }
-                if (save_game(game, SAVE_FILE))
-                    cout << "  Game saved to '" << SAVE_FILE << "'.\n";
-                else
-                    cout << "  Could not write '" << SAVE_FILE << "'.\n";
+				if (!has_game)
+				{
+					cout << "  No game in progress - start or load a game first.\n";
+					break;
+				}
+				if (save_game(game, SAVE_FILE))
+					cout << "  Game saved to '" << SAVE_FILE << "'.\n";
+				else
+					cout << "  Could not write '" << SAVE_FILE << "'.\n";
 #else
-                cout << "  Save/load is disabled in this build "
-                     << "(compile with -DWITH_SAVE_LOAD to enable it).\n";
+				cout << "  Save/load is disabled in this build "
+					 << "(compile with -DWITH_SAVE_LOAD to enable it).\n";
 #endif
-                break;
-
-            case 4: // quit
-                cout << "  Goodbye!\n";
-                return 0;
-
-            default:
-                cout << "  Enter a number 1-4.\n";
-        }
+				break;
+			case 4:
+				cout << "  Goodbye!\n";
+				return 0;
+			default:
+				cout << "  Enter a number 1-4.\n";
+		}
+	}
+}
+int main()
+{
+	srand((unsigned)time(0));
+	return main_game();
+}
