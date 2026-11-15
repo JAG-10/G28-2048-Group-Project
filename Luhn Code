@@ -20,7 +20,7 @@ int main()
     }
 
     // Check card length
-    if (length < 13 || length > 19)
+    if (length != 16)
     {
         valid = false;
     }
