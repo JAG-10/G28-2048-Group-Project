@@ -1,3 +1,8 @@
+#ifndef HELPER_2048_H
+#define HELPER_2048_H
+#ifndef WITH_SAVE_LOAD
+#define WITH_SAVE_LOAD
+#endif
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
