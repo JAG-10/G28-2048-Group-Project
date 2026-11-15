@@ -7,5 +7,5 @@ Josue (JAG-10)
 
 # Description
 
-Standard 2048 Game
+Standard 2048 Game & 
 Luhn Code
