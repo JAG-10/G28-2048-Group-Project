@@ -207,7 +207,7 @@ void play_game(GameState &game)
     }
 }
 
-int main()
+int main_game()
 {
     GameState game;
     new_game(game);          // start with a valid empty state
