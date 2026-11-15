@@ -1,13 +1,29 @@
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
+#include <cctype>
 using namespace std;
-void slide_and_merge(int line[], int n)
+const int BOARD_SIZE = 5;
+const int WIN_TILE = 2048;
+const char *const SAVE_FILE = "2048.sav";
+struct GameState
 {
-	int out[5] = {0};
+	int board[BOARD_SIZE][BOARD_SIZE];
+	int score;
+	int moves;
+	bool won;
+};
+char lower(char c)
+{
+	return (char)tolower((unsigned char)c);
+}
+int slide_and_merge(int line[])
+{
+	int out[BOARD_SIZE] = {0};
 	int idx = 0;
+	int points = 0;
 	bool can_merge = false;
-	for (int i = 0; i < n; i++)
+	for (int i = 0; i < BOARD_SIZE; i++)
 	{
 		int v = line[i];
 		if (v == 0)
@@ -15,6 +31,7 @@ void slide_and_merge(int line[], int n)
 		if (can_merge && out[idx - 1] == v)
 		{
 			out[idx - 1] *= 2;
+			points += out[idx - 1];
 			can_merge = false;
 		}
 		else
@@ -23,81 +40,74 @@ void slide_and_merge(int line[], int n)
 			can_merge = true;
 		}
 	}
-
-	for (int i = 0; i < n; i++)
+	for (int i = 0; i < BOARD_SIZE; i++)
 		line[i] = out[i];
+	return points;
 }
-
-void move_left(int board[][5], int numrows = 5)
+int move_left(int board[][BOARD_SIZE])
 {
-	for (int row = 0; row < numrows; row++)
+	int points = 0;
+	for (int row = 0; row < BOARD_SIZE; row++)
 	{
-		int line[5];
-		for (int col = 0; col < 5; col++)
+		int line[BOARD_SIZE];
+		for (int col = 0; col < BOARD_SIZE; col++)
 			line[col] = board[row][col];
-
-		slide_and_merge(line, 5);
-
-		for (int col = 0; col < 5; col++)
+		points += slide_and_merge(line);
+		for (int col = 0; col < BOARD_SIZE; col++)
 			board[row][col] = line[col];
 	}
+	return points;
 }
-
-void move_right(int board[][5], int numrows = 5)
+int move_right(int board[][BOARD_SIZE])
 {
-	for (int row = 0; row < numrows; row++)
+	int points = 0;
+	for (int row = 0; row < BOARD_SIZE; row++)
 	{
-		int line[5];
-		for (int col = 0; col < 5; col++)
-			line[col] = board[row][4 - col];
-
-		slide_and_merge(line, 5);
-
-		for (int col = 0; col < 5; col++)
-			board[row][4 - col] = line[col];
+		int line[BOARD_SIZE];
+		for (int col = 0; col < BOARD_SIZE; col++)
+			line[col] = board[row][BOARD_SIZE - 1 - col];
+		points += slide_and_merge(line);
+		for (int col = 0; col < BOARD_SIZE; col++)
+			board[row][BOARD_SIZE - 1 - col] = line[col];
 	}
+	return points;
 }
-
-void move_up(int board[][5], int numrows = 5)
+int move_up(int board[][BOARD_SIZE])
 {
-	for (int col = 0; col < 5; col++)
+	int points = 0;
+	for (int col = 0; col < BOARD_SIZE; col++)
 	{
-		int line[5];
-		for (int row = 0; row < numrows; row++)
+		int line[BOARD_SIZE];
+		for (int row = 0; row < BOARD_SIZE; row++)
 			line[row] = board[row][col];
-
-		slide_and_merge(line, numrows);
-
-		for (int row = 0; row < numrows; row++)
+		points += slide_and_merge(line);
+		for (int row = 0; row < BOARD_SIZE; row++)
 			board[row][col] = line[row];
 	}
+	return points;
 }
-
-void move_down(int board[][5], int numrows = 5)
+int move_down(int board[][BOARD_SIZE])
 {
-	for (int col = 0; col < 5; col++)
+	int points = 0;
+	for (int col = 0; col < BOARD_SIZE; col++)
 	{
-		int line[5];
-		for (int row = 0; row < numrows; row++)
-			line[row] = board[numrows - 1 - row][col];
-
-		slide_and_merge(line, numrows);
-
-		for (int row = 0; row < numrows; row++)
-			board[numrows - 1 - row][col] = line[row];
+		int line[BOARD_SIZE];
+		for (int row = 0; row < BOARD_SIZE; row++)
+			line[row] = board[BOARD_SIZE - 1 - row][col];
+		points += slide_and_merge(line);
+		for (int row = 0; row < BOARD_SIZE; row++)
+			board[BOARD_SIZE - 1 - row][col] = line[row];
 	}
+	return points;
 }
-
-
-void print_board(int board[][5], int numrows = 5)
+void print_board(int board[][BOARD_SIZE])
 {
 	cout << endl << "\t-----------------------------------------" << endl;
-
-	for (int row = 0; row < numrows; row++)
+	for (int row = 0; row < BOARD_SIZE; row++)
 	{
-		for (int col = 0; col < 5; col++)
+		for (int col = 0; col < BOARD_SIZE; col++)
 		{
-			if(board[row][col] > 0)
+			if (board[row][col] > 0)
 				cout << "\t|" << right << setw(6) << setfill(' ') << board[row][col];
 			else
 				cout << "\t|" << right << setw(6) << setfill(' ') << " ";
@@ -107,37 +117,69 @@ void print_board(int board[][5], int numrows = 5)
 	}
 	cout << "\t" << endl << endl;
 }
-void insert_random(int board[][5], int numrows = 5)
+void insert_random(int board[][BOARD_SIZE])
 {
-	int row, col;
 	int empty_count = 0;
-	for (int row = 0; row < numrows; row++)
-	{
-		for (int col = 0; col < 5; col++)
-		{
+	for (int row = 0; row < BOARD_SIZE; row++)
+		for (int col = 0; col < BOARD_SIZE; col++)
 			if (board[row][col] == 0)
 				empty_count++;
-		}
-	}
-	if (empty_count > 0)
-	{
-		while (true)
-		{
-			row = rand() % numrows;
-			col = rand() % numrows;
-			if (board[row][col] == 0)
+	if (empty_count == 0)
+		return;
+	int target = rand() % empty_count;
+	for (int row = 0; row < BOARD_SIZE; row++)
+		for (int col = 0; col < BOARD_SIZE; col++)
+			if (board[row][col] == 0 && target-- == 0)
 			{
-				board[row][col] = 2 * (1 + (rand() % 2));
-				break;
+				board[row][col] = (rand() % 10 == 0) ? 4 : 2;
+				return;
 			}
-		}
-	}
 }
-bool same_board(int a[][5], int b[][5], int numrows = 5)
+bool boards_equal(int a[][BOARD_SIZE], int b[][BOARD_SIZE])
 {
-	for (int row = 0; row < numrows; row++)
-		for (int col = 0; col < 5; col++)
+	for (int row = 0; row < BOARD_SIZE; row++)
+		for (int col = 0; col < BOARD_SIZE; col++)
 			if (a[row][col] != b[row][col])
 				return false;
 	return true;
+}
+void copy_board(int dst[][BOARD_SIZE], int src[][BOARD_SIZE])
+{
+	for (int row = 0; row < BOARD_SIZE; row++)
+		for (int col = 0; col < BOARD_SIZE; col++)
+			dst[row][col] = src[row][col];
+}
+bool can_move(int board[][BOARD_SIZE])
+{
+	for (int row = 0; row < BOARD_SIZE; row++)
+		for (int col = 0; col < BOARD_SIZE; col++)
+		{
+			if (board[row][col] == 0)
+				return true;
+			if (col + 1 < BOARD_SIZE && board[row][col] == board[row][col + 1])
+				return true;
+			if (row + 1 < BOARD_SIZE && board[row][col] == board[row + 1][col])
+				return true;
+		}
+	return false;
+}
+int highest_tile(int board[][BOARD_SIZE])
+{
+	int best = 0;
+	for (int row = 0; row < BOARD_SIZE; row++)
+		for (int col = 0; col < BOARD_SIZE; col++)
+			if (board[row][col] > best)
+				best = board[row][col];
+	return best;
+}
+void new_game(GameState &game)
+{
+	for (int row = 0; row < BOARD_SIZE; row++)
+		for (int col = 0; col < BOARD_SIZE; col++)
+			game.board[row][col] = 0;
+	game.score = 0;
+	game.moves = 0;
+	game.won = false;
+	insert_random(game.board);
+	insert_random(game.board);
 }
