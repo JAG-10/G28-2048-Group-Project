@@ -33,6 +33,72 @@ int main()
 			move_left(board, size);
 		else if (choice == 'r')
 			move_right(board, size);
+int move_up(int board[][5], int numrows = 5)
+{
+    int points = 0;
+    for (int col = 0; col < BOARD_SIZE; col++)
+    {
+        int line[BOARD_SIZE];
+        for (int row = 0; row < numrows; row++)
+            line[row] = board[row][col];                    
+
+        points += slide_and_merge(line, numrows);
+
+        for (int row = 0; row < numrows; row++)
+            board[row][col] = line[row];
+    }
+    return points;
+}
+
+int move_down(int board[][5], int numrows = 5)
+{
+    int points = 0;
+    for (int col = 0; col < BOARD_SIZE; col++)
+    {
+        int line[BOARD_SIZE];
+        for (int row = 0; row < numrows; r++)
+            line[row] = board[numrows - 1 - row][col];      
+
+        points += slide_and_merge(line, numrows);
+
+        for (int row = 0; row < numrows; row++)
+            board[numrows - 1 - row][col] = line[row];
+    }
+    return points;
+}
+int move_left(int board[][5], int numrows = 5)
+{
+    int points = 0;
+    for (int row = 0; row < numrows; row++)
+    {
+        int line[BOARD_SIZE];
+        for (int col = 0; col < BOARD_SIZE; col++)
+            line[col] = board[row][col];
+
+        points += slide_and_merge(line, BOARD_SIZE);
+
+        for (int col = 0; col < BOARD_SIZE; col++)
+            board[row][col] = line[col];
+    }
+    return points;
+}
+
+int move_right(int board[][5], int numrows = 5)
+{
+    int points = 0;
+    for (int row = 0; row < numrows; row++)
+    {
+        int line[BOARD_SIZE];
+        for (int col = 0; col < BOARD_SIZE; col++)
+            line[col] = board[row][BOARD_SIZE - 1 - col];   
+
+        points += slide_and_merge(line, BOARD_SIZE);
+
+        for (int col = 0; col < BOARD_SIZE; col++)
+            board[row][BOARD_SIZE - 1 - col] = line[col];   
+    }
+    return points;
+}
 
 		insert_random(board, size);
 		print_board(board);
